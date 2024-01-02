@@ -1,224 +1,255 @@
-'''
-Created on 06/08/2012. @author: Nygaard, MCV.
-
-'''
-#---------------- MISC -----------------
-#---------------------------------------
+# ---------------- MISC -----------------
+# ---------------------------------------
 from __future__ import division
-from psychopy import core, visual, sound, event, gui, monitors #parallel
+from psychopy import core, visual, sound, event, gui, monitors  # parallel
 from math import sin, cos, radians
 from numpy import average
 from random import shuffle, randint, uniform
 import os, csv
+
 try:
-    import winsound     # NB. There is known errors in timing using winsound (i.e. do not use)
+    import winsound  # NB. There is known errors in timing using winsound (i.e. do not use)
     import thread
+
     windows = True
 except ImportError:
-    windows = False    
+    windows = False
 
-#---------------- VARS -----------------
-#-----------------------------------------
+# ---------------- VARS -----------------
+# -----------------------------------------
 # Trial and data options
-condition_keys = ['W-press','M-press']              # Keys to identify what type of block to run
-blockRepetitions = 1                               # Number of times each block will occur
-trainingCondition_keys = ['M-press','W-press']      # Keys to identify what type of block to run in training
-trainingBlockRepetitions = 1                        # Number of times each block will occur in training
+condition_keys = ["W-press", "M-press"]  # Keys to identify what type of block to run
+blockRepetitions = 1  # Number of times each block will occur
+trainingCondition_keys = [
+    "M-press",
+    "W-press",
+]  # Keys to identify what type of block to run in training
+trainingBlockRepetitions = 1  # Number of times each block will occur in training
 
-trainingTrials = 1                                  # Number of initial training-trials per block
-BlockTrials = 5                                     # Number of trials per block
+trainingTrials = 1  # Number of initial training-trials per block
+BlockTrials = 5  # Number of trials per block
 
 # Misc options
-toneOnset = [1.5, 7]        # [earliest, latest] onset range of tone in singleTone condition (in seconds)
-toneDelay = 0               # Delay of tone (in seconds) relative to response after response (in seconds)
-dotDelay = [36, 60]         # [earliest, latest] duration of dot, after last event (in frames)
+toneOnset = [
+    1.5,
+    7,
+]  # [earliest, latest] onset range of tone in singleTone condition (in seconds)
+toneDelay = (
+    0  # Delay of tone (in seconds) relative to response after response (in seconds)
+)
+dotDelay = [36, 60]  # [earliest, latest] duration of dot, after last event (in frames)
 
 # Display options
-monDistance = 70            # Distance from subject eyes to monitor (in cm)
-monWidth = 30               # Width of monitor display (in cm)
-textSize = 0.8              # Size of text in degrees
-circleRadius = 2            # Radius of circle (in degrees)
-dotSize = circleRadius/10   # Size of dot (in degrees)
-libetTime = 2.56            # Rotation speed of dot
-dotStep = 360/libetTime/60  # Degrees shift per monitor-frame: 360/LibetTime/framerate
-tics = 12                   # Number of tics on circle
+monDistance = 70  # Distance from subject eyes to monitor (in cm)
+monWidth = 30  # Width of monitor display (in cm)
+textSize = 0.8  # Size of text in degrees
+circleRadius = 2  # Radius of circle (in degrees)
+dotSize = circleRadius / 10  # Size of dot (in degrees)
+libetTime = 2.56  # Rotation speed of dot
+dotStep = (
+    360 / libetTime / 60
+)  # Degrees shift per monitor-frame: 360/LibetTime/framerate
+tics = 12  # Number of tics on circle
 
 # Sound
-beepHz = 1000               # Frequency of sound
-beepDuration = 0.1          # Duration (in seconds)
+beepHz = 1000  # Frequency of sound
+beepDuration = 0.1  # Duration (in seconds)
 
 # Approximations
 msScale = 1000
 degScale = 10
 
 # Time out parameters
-#timeOutDistrubution = 0.5
-#averageVectorSize = 3
-#timeOutMeanList = range(averageVectorSize)
-#timeOutScaleDown = [2, 5]
-#timeOutScaleUp = [15,30]
+# timeOutDistrubution = 0.5
+# averageVectorSize = 3
+# timeOutMeanList = range(averageVectorSize)
+# timeOutScaleDown = [2, 5]
+# timeOutScaleUp = [15,30]
 
 # Questions, responses and primes
 instructions = {
-    'W-press':'\n\nW-press\n\nInstruction:\n\nPress as soon as you experience the intention to do so.\n\nSelect where the dot was when you experienced the first intention to press.',
-    'M-press':'\n\nM-press\n\nInstruction:\n\nPress as soon as you experience the intention to do so.\n\nSelect where the dot was when you pressed.'
+    "W-press": "\n\nW-press\n\nInstruction:\n\nPress as soon as you experience the intention to do so.\n\nSelect where the dot was when you experienced the first intention to press.",
+    "M-press": "\n\nM-press\n\nInstruction:\n\nPress as soon as you experience the intention to do so.\n\nSelect where the dot was when you pressed.",
 }
 
 questions = {
-    'W-press':'Where was the dot when you experienced the first intention to press?',
-    'M-press':'Where was the dot when you pressed?'
+    "W-press": "Where was the dot when you experienced the first intention to press?",
+    "M-press": "Where was the dot when you pressed?",
 }
 
-moveKeys = {
-    'left': -20,
-    'up':1,
-    'down': -1,
-    'right': 20
-}
+moveKeys = {"left": -20, "up": 1, "down": -1, "right": 20}
 
-errorKeys = ['f','num_subtract']
-leftKeys = ['d']
-rightKeys = ['k']
-ansKeys = ['return']
-timeOutKeys = ['y','n','num_add']
-quitKeys = ['q','esc','escape']
+errorKeys = ["f", "num_subtract"]
+leftKeys = ["d"]
+rightKeys = ["k"]
+ansKeys = ["return"]
+timeOutKeys = ["y", "n", "num_add"]
+quitKeys = ["q", "esc", "escape"]
 
-#letters = ['b','c','d','f','g','h','j','k','n','p','r','s','t','v','w','x','z']
+# letters = ['b','c','d','f','g','h','j','k','n','p','r','s','t','v','w','x','z']
 
 # Data containers for each trial
-dataCategories = ['id','condition','no','dotDelay','toneOnset','toneAngle','pressOnset','pressAngle','ansAngle','ansTime','timeOut','timeOutOnset','timeOutQuestion','stopCharacter','samplesToLastIdenticalCharacter','userError','response']
-dataDict = dict(zip(dataCategories,['' for i in dataCategories]))
+dataCategories = [
+    "id",
+    "condition",
+    "no",
+    "dotDelay",
+    "toneOnset",
+    "toneAngle",
+    "pressOnset",
+    "pressAngle",
+    "ansAngle",
+    "ansTime",
+    "timeOut",
+    "timeOutOnset",
+    "timeOutQuestion",
+    "stopCharacter",
+    "samplesToLastIdenticalCharacter",
+    "userError",
+    "response",
+]
+dataDict = dict(zip(dataCategories, ["" for i in dataCategories]))
 
 # Set monitor variables
-myMon = monitors.Monitor(name='testMonitor')
+myMon = monitors.Monitor(name="testMonitor")
 myMon.setDistance(monDistance)
 myMon.setWidth(monWidth)
 
 # Intro dialogue
 dialogue = gui.Dlg()
-dialogue.addField('subjectID')
+dialogue.addField("subjectID")
 dialogue.show()
 if dialogue.OK:
-    if dialogue.data[0].isdigit(): 
+    if dialogue.data[0].isdigit():
         subjectID = dialogue.data[0]
-    else: 
-        print('SUBJECT SHOULD BE DIGIT')
+    else:
+        print("SUBJECT SHOULD BE DIGIT")
         core.quit()
-else: core.quit()
+else:
+    core.quit()
 
 # Make folder for data
-saveFolder = 'data'
-if not os.path.isdir(saveFolder): 
+saveFolder = "data"
+if not os.path.isdir(saveFolder):
     os.makedirs(saveFolder)
 
 # Clocks
 trialClock = core.Clock()
-#letterClock = core.Clock()
+# letterClock = core.Clock()
 soundClock = core.Clock()
 TimeOutClock = core.Clock()
 
-#-------------- STIMULI ----------------
-#---------------------------------------
-win = visual.Window(monitor=myMon, size=myMon.getSizePix(), fullscr=False, allowGUI=False, color='black', units='deg', waitBlanking=False) 
+# -------------- STIMULI ----------------
+# ---------------------------------------
+win = visual.Window(
+    monitor=myMon,
+    size=myMon.getSizePix(),
+    fullscr=False,
+    allowGUI=False,
+    color="black",
+    units="deg",
+    waitBlanking=False,
+)
 # Change fullscreen here: " fullscr=True/False "
-mainText = visual.TextStim(win=win, height=textSize, color='white')
-questionText = visual.TextStim(win=win, pos=(0, circleRadius*2), height=textSize, color='white')
-clockDot = visual.PatchStim(win=win, mask="circle", color='#0000FF', tex=None, size=dotSize)
-clockDotTimeOut = visual.PatchStim(win=win, mask="circle", color='#FF0000', tex=None, size=dotSize)
-#beep = sound.Sound(value=beepHz, secs=0.1)
-#print("done")
+mainText = visual.TextStim(win=win, height=textSize, color="white")
+questionText = visual.TextStim(
+    win=win, pos=(0, circleRadius * 2), height=textSize, color="white"
+)
+clockDot = visual.PatchStim(
+    win=win, mask="circle", color="#0000FF", tex=None, size=dotSize
+)
+clockDotTimeOut = visual.PatchStim(
+    win=win, mask="circle", color="#FF0000", tex=None, size=dotSize
+)
+# beep = sound.Sound(value=beepHz, secs=0.1)
+# print("done")
 
 # Make complex figure: circle + tics + fixation cross. Render and save as single stimulus "circle"
-visual.Circle(win, radius=circleRadius, edges=512, lineWidth=3, lineColor='white').draw()
-for angleDeg in range(0,360,int(360/tics)):
+visual.Circle(
+    win, radius=circleRadius, edges=512, lineWidth=3, lineColor="white"
+).draw()
+for angleDeg in range(0, 360, int(360 / tics)):
     angleRad = radians(angleDeg)
-    begin = [circleRadius*sin(angleRad), circleRadius*cos(angleRad)]
-    end = [begin[0]*1.1, begin[1]*1.1]
-    visual.Line(win, start=(begin[0],begin[1]), end=(end[0],end[1]), lineColor='white', lineWidth=3).draw()
+    begin = [circleRadius * sin(angleRad), circleRadius * cos(angleRad)]
+    end = [begin[0] * 1.1, begin[1] * 1.1]
+    visual.Line(
+        win,
+        start=(begin[0], begin[1]),
+        end=(end[0], end[1]),
+        lineColor="white",
+        lineWidth=3,
+    ).draw()
 
-circle = visual.BufferImageStim(win)                                                    # Buffer it all in "circle" object
+circle = visual.BufferImageStim(win)  # Buffer it all in "circle" object
 win.clearBuffer()
 
-#------------- FUNCTIONS ---------------
-#---------------------------------------
+# ------------- FUNCTIONS ---------------
+# ---------------------------------------
 # Make a trigger fun (uncomment if computer does not have parallel port)
-#def trigger(signal):
+# def trigger(signal):
 #    parallel.setData(signal)
 #    core.wait(0.020,0.01)
 #    parallel.setData(0)
 
+
 # Make a list of trials (dictionaries) given a condition
-def makeBlock(condition,training):
+def makeBlock(condition, training):
     if training == True:
-        conditionRep = trainingTrials                                                               # Set number of training repetitions? 
+        conditionRep = trainingTrials  # Set number of training repetitions?
     else:
-        conditionRep = BlockTrials                                                               # Set number of repetitions? 
-        
+        conditionRep = BlockTrials  # Set number of repetitions?
+
     # Make a trialList with trialsPerPrime of each prime
     tmpTrials = [dict(dataDict.items()) for rep in range(conditionRep)]
     shuffle(tmpTrials)
 
     # Update every trial with trial-specific info
-    trialList = ['']*conditionRep
+    trialList = [""] * conditionRep
     for trialNo in range(len(tmpTrials)):
         trialList[trialNo] = dict(tmpTrials[trialNo].items())
-        trialList[trialNo]['no'] = trialNo+1
-        trialList[trialNo]['id'] = subjectID
-        trialList[trialNo]['condition'] = condition
-        trialList[trialNo]['dotDelay'] = randint(dotDelay[0], dotDelay[1])
+        trialList[trialNo]["no"] = trialNo + 1
+        trialList[trialNo]["id"] = subjectID
+        trialList[trialNo]["condition"] = condition
+        trialList[trialNo]["dotDelay"] = randint(dotDelay[0], dotDelay[1])
 
-#        if condition is 'singleTone': 
-#            trialList[trialNo]['toneOnset'] = uniform(toneOnset[0], toneOnset[1])
+    #        if condition is 'singleTone':
+    #            trialList[trialNo]['toneOnset'] = uniform(toneOnset[0], toneOnset[1])
 
     return trialList
 
 
 # Draws a dot on the circle, given an angle
-def drawDot(angleDeg,timeOut):
+def drawDot(angleDeg, timeOut):
     if timeOut == False:
         angleRad = radians(angleDeg)
-        x = circleRadius*sin(angleRad)
-        y = circleRadius*cos(angleRad)
-        clockDot.setPos([x,y])
+        x = circleRadius * sin(angleRad)
+        y = circleRadius * cos(angleRad)
+        clockDot.setPos([x, y])
         clockDot.draw()
     else:
         angleRad = radians(angleDeg)
-        x = circleRadius*sin(angleRad)
-        y = circleRadius*cos(angleRad)
-        clockDotTimeOut.setPos([x,y])
+        x = circleRadius * sin(angleRad)
+        y = circleRadius * cos(angleRad)
+        clockDotTimeOut.setPos([x, y])
         clockDotTimeOut.draw()
+
 
 def windowsBeep():
     lock = thread.allocate_lock()
-    lock.acquire()                                                                      # Entering critical section
-    winsound.Beep(beepHz, int(beepDuration*msScale))
-    lock.release()                                                                      # Exiting critical section
+    lock.acquire()  # Entering critical section
+    winsound.Beep(beepHz, int(beepDuration * msScale))
+    lock.release()  # Exiting critical section
+
 
 # Run a block of trials and save results
 def runBlock(condition, training, letterMode):
-    trialList = makeBlock(condition,training)
-    
+    trialList = makeBlock(condition, training)
+
     # Shorten in case of several blocks
-    if 'W-press' in condition:
-        conid = 'W-press'
-    elif 'M-press' in condition:
-        conid = 'M-press'
-    # Add more if needed...
-    
-#    # Letter mode
-#    if letterMode:
-#        letterListLength = 6
-#        randomLetterListSetPoint = randint(0,len(letters)-letterListLength-1)
-#        letterBlock = letters[randomLetterListSetPoint:randomLetterListSetPoint+letterListLength]
-#        letterCounter = 0
-#        letterOffsetMinimum = 2
-#        letterOffsetMaximum = letterListLength/2
-#        letterInterval = len(letterBlock)-letterOffsetMinimum
-#        print(letterBlock)
-#        letterList = range(len(letterBlock))
-#        print(letterList)
-#        shuffle(letterList)
-#        letterListOld = letterList
+    if "W-press" in condition:
+        conid = "W-press"
+    elif "M-press" in condition:
+        conid = "M-press"
 
     # Time out
     timeOutLogic = False
@@ -235,198 +266,239 @@ def runBlock(condition, training, letterMode):
 
     # Set up .csv save function
     if not training:
-        saveFile = saveFolder+'/subject_' +str(subjectID)+'_'+condition+'.csv'          # Filename for save-data
-        csvWriter = csv.writer(open(saveFile, 'w', newline=''), delimiter=';').writerow            # The writer function to csv
-        csvWriter(dataCategories)                                                       # Writes title-row in csv           
+        saveFile = (
+            saveFolder + "/subject_" + str(subjectID) + "_" + condition + ".csv"
+        )  # Filename for save-data
+        csvWriter = csv.writer(
+            open(saveFile, "w", newline=""), delimiter=";"
+        ).writerow  # The writer function to csv
+        csvWriter(dataCategories)  # Writes title-row in csv
 
     # Show instruction
     mainText.setText(instructions[conid])
     mainText.draw()
     win.flip()
-    event.waitKeys(keyList=ansKeys) #    event.waitKeys(ansKeys)
-
+    event.waitKeys(keyList=ansKeys)  #    event.waitKeys(ansKeys)
 
     # Loop through trials
     for trial in trialList:
         # Prepare each trial
-        if training: 
-            mainText.setText('TRAINING')                                                # Show "TRAINING" instead of prime in training condition
-        
-        questionText.setText(questions[conid])                                      # Set text of question
-        dotAngle = uniform(0,360)                                                       # Angle of dot in degrees
-        dotDelayFrames = 0                                                              # When not 0, indicates that the last event has occurred and the number of frames since that event
+        if training:
+            mainText.setText(
+                "TRAINING"
+            )  # Show "TRAINING" instead of prime in training condition
 
-#        beepTime = trial['toneOnset']                                                   # Time of beep (0=unset, for non toneOnset conditions)
+        questionText.setText(questions[conid])  # Set text of question
+        dotAngle = uniform(0, 360)  # Angle of dot in degrees
+        dotDelayFrames = 0  # When not 0, indicates that the last event has occurred and the number of frames since that event
+
+        #        beepTime = trial['toneOnset']                                                   # Time of beep (0=unset, for non toneOnset conditions)
 
         # Show rotating dot and handle events
         event.clearEvents()
         trialClock.reset()
-#        letterClock.reset()
+        #        letterClock.reset()
         TimeOutClock.reset()
         timeOutLogic = False
         trialCounter = trialCounter + 1
-        
+
         # Send start trigger
-#       trigger(startTrigger)                   # COMMENT !!!
+        #       trigger(startTrigger)                   # COMMENT !!!
         print(startTrigger)
-        
+
         while True:
             dotAngle += dotStep
             if dotAngle > 360:
                 dotAngle -= 360
             circle.draw()
-            visual.TextStim(win, text='+', color='white', height=textSize, antialias=False).draw()
-            drawDot(dotAngle,timeOutLogic)
+            visual.TextStim(
+                win, text="+", color="white", height=textSize, antialias=False
+            ).draw()
+            drawDot(dotAngle, timeOutLogic)
             win.flip()
 
             # Record press
-            if conid in ['W-press','M-press']: #condition in ['W-press','M-press','W-press1','M-press1']:
-
+            if conid in [
+                "W-press",
+                "M-press",
+            ]:  # condition in ['W-press','M-press','W-press1','M-press1']:
                 # Log event
-                response = event.getKeys(keyList=leftKeys+rightKeys+ansKeys+quitKeys, timeStamped=trialClock)
-                if len(response) and not trial['pressOnset']:       # Only react on first response to this trial
-                    if response[-1][0] in quitKeys: core.quit()
-                    trial['pressOnset'] = int((response[-1][1])*msScale)/msScale
-                    trial['pressAngle'] = int((dotAngle-dotStep)*degScale)/degScale
-                    
+                response = event.getKeys(
+                    keyList=leftKeys + rightKeys + ansKeys + quitKeys,
+                    timeStamped=trialClock,
+                )
+                if (
+                    len(response) and not trial["pressOnset"]
+                ):  # Only react on first response to this trial
+                    if response[-1][0] in quitKeys:
+                        core.quit()
+                    trial["pressOnset"] = int((response[-1][1]) * msScale) / msScale
+                    trial["pressAngle"] = (
+                        int((dotAngle - dotStep) * degScale) / degScale
+                    )
+
                     # Left/right trigger based on response
                     if response[-1][0] in leftKeys:
-#                        trigger(leftTrigger)                   # COMMENT !!
+                        #                        trigger(leftTrigger)                   # COMMENT !!
                         print(rightTrigger)
-                        trial['response'] = rightTrigger
+                        trial["response"] = rightTrigger
                     elif response[-1][0] in rightKeys:
-#                        trigger(leftTrigger)                   # COMMENT !!
+                        #                        trigger(leftTrigger)                   # COMMENT !!
                         print(leftTrigger)
-                        trial['response'] = rightTrigger
-#                    trial['toneOnset'] = int((trialClock.getTime())*msScale)/msScale
-#                    trial['toneAngle'] = int((dotAngle)*degScale)/degScale
+                        trial["response"] = rightTrigger
+                    #                    trial['toneOnset'] = int((trialClock.getTime())*msScale)/msScale
+                    #                    trial['toneAngle'] = int((dotAngle)*degScale)/degScale
 
-#                    for wordInList in range(len(letterList)):
-#                        if letterBlock[letterList[letterCounter]] == letterBlock[letterListOld[wordInList]]:
-#                            wordInListNumberOfDifferentCharactersBetween = (len(letterList)-wordInList) + letterCounter - 1
-#                    #print wordInListMemo
-#                    #print letterCounter
-#                    trial['stopCharacter'] = letterBlock[letterList[letterCounter]]
-#                    trial['samplesToLastIdenticalCharacter'] = wordInListNumberOfDifferentCharactersBetween
+                    #                    for wordInList in range(len(letterList)):
+                    #                        if letterBlock[letterList[letterCounter]] == letterBlock[letterListOld[wordInList]]:
+                    #                            wordInListNumberOfDifferentCharactersBetween = (len(letterList)-wordInList) + letterCounter - 1
+                    #                    #print wordInListMemo
+                    #                    #print letterCounter
+                    #                    trial['stopCharacter'] = letterBlock[letterList[letterCounter]]
+                    #                    trial['samplesToLastIdenticalCharacter'] = wordInListNumberOfDifferentCharactersBetween
 
-                    if conid in ['W-press','M-press']: #or 'singlePressTimeOut': 
-                        dotDelayFrames = 1   # Mark as last event
+                    if conid in ["W-press", "M-press"]:  # or 'singlePressTimeOut':
+                        dotDelayFrames = 1  # Mark as last event
 
             # Play beep when time is up and mark as last event
-#            if beepTime and trialClock.getTime() > beepTime:
+            #            if beepTime and trialClock.getTime() > beepTime:
 
-#                # Play differently on windows and mac/linux
+            #                # Play differently on windows and mac/linux
 
-#                if windows: 
-#                    thread.start_new_thread(windowsBeep,())
-#                else: 
-#                    beep.play()
-#                trial['toneOnset'] = int((trialClock.getTime())*msScale)/msScale
-#                trial['toneAngle'] = int((dotAngle)*degScale)/degScale
-#                beepTime = 0
-#                dotDelayFrames = 1
+            #                if windows:
+            #                    thread.start_new_thread(windowsBeep,())
+            #                else:
+            #                    beep.play()
+            #                trial['toneOnset'] = int((trialClock.getTime())*msScale)/msScale
+            #                trial['toneAngle'] = int((dotAngle)*degScale)/degScale
+            #                beepTime = 0
+            #                dotDelayFrames = 1
 
             # The little time after last event, where the dot keeps rotating.
             if dotDelayFrames:
                 TimeOutClock.reset()
-#                if trial['timeOut'] == 'yes':
-#                    timeOutLogic = True
-#                else:
-#                    timeOutLogic = False
+                #                if trial['timeOut'] == 'yes':
+                #                    timeOutLogic = True
+                #                else:
+                #                    timeOutLogic = False
 
-                if dotDelayFrames > trial['dotDelay']: 
+                if dotDelayFrames > trial["dotDelay"]:
                     break
                 dotDelayFrames += 1
 
         # Subjects selects location of target event
-        dotAngle = uniform(0,360)
+        dotAngle = uniform(0, 360)
         trialClock.reset()
-        
+
         while True:
             circle.draw()
             questionText.draw()
-            visual.TextStim(win, text='+', color='white', height=textSize, antialias=False).draw()
+            visual.TextStim(
+                win, text="+", color="white", height=textSize, antialias=False
+            ).draw()
 
-            if trial['timeOut'] == 'yes':
-                drawDot(dotAngle,True)
+            if trial["timeOut"] == "yes":
+                drawDot(dotAngle, True)
             else:
-                drawDot(dotAngle,False)
+                drawDot(dotAngle, False)
             win.flip()
 
             # Handle responses: quit, move or answer
-            response = event.waitKeys(keyList=list(moveKeys.keys())+ansKeys+quitKeys) #             response = event.waitKeys(moveKeys.keys()+ansKeys+quitKeys)
-            if response[-1] in quitKeys: core.quit()
-            if response[-1] in moveKeys: 
+            response = event.waitKeys(
+                keyList=list(moveKeys.keys()) + ansKeys + quitKeys
+            )  #             response = event.waitKeys(moveKeys.keys()+ansKeys+quitKeys)
+            if response[-1] in quitKeys:
+                core.quit()
+            if response[-1] in moveKeys:
                 dotAngle += moveKeys[response[-1]]
-                if dotAngle > 360: 
-                    dotAngle = dotAngle-360
-                if dotAngle < 0: 
-                    dotAngle = 360+dotAngle
+                if dotAngle > 360:
+                    dotAngle = dotAngle - 360
+                if dotAngle < 0:
+                    dotAngle = 360 + dotAngle
             if response[-1] in ansKeys:
-                trial['ansTime'] = int((trialClock.getTime())*msScale)/msScale
-                trial['ansAngle'] = int((dotAngle)*degScale)/degScale
+                trial["ansTime"] = int((trialClock.getTime()) * msScale) / msScale
+                trial["ansAngle"] = int((dotAngle) * degScale) / degScale
                 break
 
-        # Additional question    
-        if conid in ['W-press','M-press']: #condition in ['W-press','M-press','W-press1','M-press1']:
+        # Additional question
+        if conid in [
+            "W-press",
+            "M-press",
+        ]:  # condition in ['W-press','M-press','W-press1','M-press1']:
             waitTimeBeforeNextTrial = 0.75
-            questionText.setText('Press (Y) to continue \n\n (F) if error in last trial')                                      # !!!!!! Set text of question text !!!!!!!
+            questionText.setText(
+                "Press (Y) to continue \n\n (F) if error in last trial"
+            )  # !!!!!! Set text of question text !!!!!!!
             questionText.draw()
             win.flip()
 
             while True:
                 # Handle responses: quit, move or answer
-                response = event.waitKeys(keyList=timeOutKeys+errorKeys+quitKeys) #                response = event.waitKeys(timeOutKeys+errorKeys+quitKeys)
+                response = event.waitKeys(
+                    keyList=timeOutKeys + errorKeys + quitKeys
+                )  #                response = event.waitKeys(timeOutKeys+errorKeys+quitKeys)
 
-#                print('response: '+response)
-                if response[-1] in quitKeys: 
+                #                print('response: '+response)
+                if response[-1] in quitKeys:
                     core.quit()
-                if response[-1] in timeOutKeys: 
-                    trial['timeOutQuestion'] = response[-1]
-                    trial['userError'] = False
+                if response[-1] in timeOutKeys:
+                    trial["timeOutQuestion"] = response[-1]
+                    trial["userError"] = False
                     break
 
                 if response[-1] in errorKeys:
-                    trial['timeOutQuestion'] = 'NA'
-                    trial['userError'] = True
+                    trial["timeOutQuestion"] = "NA"
+                    trial["userError"] = True
                     break
 
             # Set baseline libet clock for 0.75 seconds
             circle.draw()
-            visual.TextStim(win, text='+', color='white', height=textSize, antialias=False).draw()
+            visual.TextStim(
+                win, text="+", color="white", height=textSize, antialias=False
+            ).draw()
             win.flip()
             core.wait(waitTimeBeforeNextTrial)
 
         # End of trial: save by appending data to csv. If training: stop after trainingTrials trials
-        if not training: 
+        if not training:
             csvWriter([trial[category] for category in dataCategories])
-        else: 
-            if trial['no'] >= trainingTrials: return
+        else:
+            if trial["no"] >= trainingTrials:
+                return
+
 
 def trainingIsOver():
-    questionText.setText('Training is over \n\nGet ready...')                                      # !!!!!! Set text
+    questionText.setText("Training is over \n\nGet ready...")  # !!!!!! Set text
     questionText.draw()
     win.flip()
     event.waitKeys()
 
+
 def ThankYou():
-    questionText.setText('This part of the experiment is over now \n\nThank You... :)')                                      # !!!!!! Set text
+    questionText.setText(
+        "This part of the experiment is over now \n\nThank You... :)"
+    )  # !!!!!! Set text
     questionText.draw()
     win.flip()
-    event.waitKeys() #    event.waitKeys(ansKeys)
+    event.waitKeys()  #    event.waitKeys(ansKeys)
 
-#---------- RUN EXPERIMENT -------------
-#---------------------------------------
+
+# ---------- RUN EXPERIMENT -------------
+# ---------------------------------------
 # Make random order of conditions and run experiment
-conditions = [x + str(y+1) for x in condition_keys for y in range(blockRepetitions)]
+conditions = [x + str(y + 1) for x in condition_keys for y in range(blockRepetitions)]
 shuffle(conditions)
-conditionsT = [x + str(y+1) for x in trainingCondition_keys for y in range(trainingBlockRepetitions)]
+conditionsT = [
+    x + str(y + 1)
+    for x in trainingCondition_keys
+    for y in range(trainingBlockRepetitions)
+]
 
 # Run the experiment
 for condition in conditionsT:
     runBlock(condition, training=True, letterMode=False)
 trainingIsOver()
-for condition in conditions: 
+for condition in conditions:
     runBlock(condition, training=False, letterMode=False)
 ThankYou()
 core.quit()
