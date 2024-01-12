@@ -1,27 +1,24 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-file_path = "data/subject_1_M-press1.csv"
+data_directory = "data"
 
-# Read the data into a DataFrame
-df = pd.read_csv(file_path, delimiter=';')
+for filename in os.listdir(data_directory):
+    if "press" in filename:
+        df = pd.read_csv(f"data/{filename}", delimiter=";")
+        df = df[["dotDelay", "pressOnset", "ansTime"]]
+        df["timeDelta"] = df["ansTime"] - df["pressOnset"]
 
-# Select only the columns 'dotDelay', 'pressOnset', and 'ansTime'
-df = df[['dotDelay', 'pressOnset', 'ansTime']]
-df["timeDelta"] = df['ansTime'] - df['pressOnset']
+        descriptive_stats = df.describe()
+        descriptive_stats.to_csv(f"stats/{filename}")
 
-# Calculate descriptive statistics
-descriptive_stats = df.describe()
+        plt.figure(figsize=(10, 6))
+        df[["timeDelta"]].boxplot()
+        plt.title(
+            "Wykres pudelkowy czasu pomiedzy uswiadomieniem intencji a nacisnieciem"
+        )
+        plt.ylabel("Sekundy")
+        plt.xticks(rotation=45)
 
-# Display descriptive statistics
-print("Descriptive Statistics:")
-print(descriptive_stats)
-
-
-# Create a box plot for the selected columns
-plt.figure(figsize=(10, 6))
-df[["timeDelta"]].boxplot()
-plt.title("Wykres pudelkowy czasu pomiedzy uswiadomieniem intencji a nacisnieciem ")
-plt.ylabel("Sekundy")
-plt.xticks(rotation=45)
-plt.show()
+        plt.savefig(f"plots/{filename}.png")

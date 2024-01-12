@@ -1,0 +1,6 @@
+id;condition;no;dotDelay;toneOnset;toneAngle;pressOnset;pressAngle;ansAngle;ansTime;timeOut;timeOutOnset;timeOutQuestion;stopCharacter;samplesToLastIdenticalCharacter;userError;response
+2;W-press1;1;43;;;3.725;200.5;267.6;3.092;;;y;;;False;
+2;W-press1;2;39;;;4.366;48.8;91.8;2.577;;;y;;;False;
+2;W-press1;3;55;;;4.232;18.6;52.4;7.265;;;y;;;False;
+2;W-press1;4;56;;;1.445;250.5;260.9;6.287;;;y;;;False;
+2;W-press1;5;45;;;3.466;91.3;73.4;7.972;;;y;;;False;

@@ -71,7 +71,6 @@ instructions = {
     "W-press": """  \n\nW-press
                     \n\nInstruction:\n\nPress as soon as you experience the intention to do so.
                     \n\nSelect where the dot was when you experienced the first intention to press.""",
-
     "M-press": """  \n\nM-press
                     \n\nInstruction:
                     \n\nPress as soon as you experience the intention to do so.
