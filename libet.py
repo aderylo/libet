@@ -1,7 +1,7 @@
 # ---------------- MISC -----------------
 # ---------------------------------------
 from __future__ import division
-from psychopy import core, visual, sound, event, gui, monitors  # parallel
+from psychopy import core, visual, sound, event, gui, monitors, parallel
 from math import sin, cos, radians
 from numpy import average
 from random import shuffle, randint, uniform
@@ -27,7 +27,7 @@ trainingCondition_keys = [
 trainingBlockRepetitions = 1  # Number of times each block will occur in training
 
 trainingTrials = 1  # Number of initial training-trials per block
-BlockTrials = 5  # Number of trials per block
+BlockTrials = 20  # Number of trials per block
 
 # Misc options
 toneOnset = [
@@ -166,8 +166,6 @@ clockDot = visual.PatchStim(
 clockDotTimeOut = visual.PatchStim(
     win=win, mask="circle", color="#FF0000", tex=None, size=dotSize
 )
-# beep = sound.Sound(value=beepHz, secs=0.1)
-# print("done")
 
 # Make complex figure: circle + tics + fixation cross. Render and save as single stimulus "circle"
 visual.Circle(
@@ -188,13 +186,17 @@ for angleDeg in range(0, 360, int(360 / tics)):
 circle = visual.BufferImageStim(win)  # Buffer it all in "circle" object
 win.clearBuffer()
 
+
 # ------------- FUNCTIONS ---------------
 # ---------------------------------------
+parallel_port_address = 0x3EFC  # Replace with your port's address
+port = parallel.ParallelPort(address=parallel_port_address)
+
 # Make a trigger fun (uncomment if computer does not have parallel port)
-# def trigger(signal):
-#    parallel.setData(signal)
-#    core.wait(0.020,0.01)
-#    parallel.setData(0)
+def trigger(signal):
+    port.setData(signal)
+    core.wait(0.020, 0.01)
+    port.setData(0)
 
 
 # Make a list of trials (dictionaries) given a condition
@@ -267,6 +269,7 @@ def runBlock(condition, training, letterMode):
     # Trigger codes to send to parallel port
     leftTrigger = 1
     rightTrigger = 2
+    ansTrigger = 4
     startTrigger = 64
 
     # Set up .csv save function
@@ -305,7 +308,7 @@ def runBlock(condition, training, letterMode):
         #        letterClock.reset()
         TimeOutClock.reset()
         timeOutLogic = False
-        trialCounter = trialCounter + 1
+        trialCounter += 1
 
         # Send start trigger
         #       trigger(startTrigger)                   # COMMENT !!!
@@ -342,42 +345,13 @@ def runBlock(condition, training, letterMode):
                         int((dotAngle - dotStep) * degScale) / degScale
                     )
 
-                    # Left/right trigger based on response
-                    if response[-1][0] in leftKeys:
-                        #                        trigger(leftTrigger)                   # COMMENT !!
-                        print(rightTrigger)
-                        trial["response"] = rightTrigger
-                    elif response[-1][0] in rightKeys:
-                        #                        trigger(leftTrigger)                   # COMMENT !!
-                        print(leftTrigger)
-                        trial["response"] = rightTrigger
-                    #                    trial['toneOnset'] = int((trialClock.getTime())*msScale)/msScale
-                    #                    trial['toneAngle'] = int((dotAngle)*degScale)/degScale
-
-                    #                    for wordInList in range(len(letterList)):
-                    #                        if letterBlock[letterList[letterCounter]] == letterBlock[letterListOld[wordInList]]:
-                    #                            wordInListNumberOfDifferentCharactersBetween = (len(letterList)-wordInList) + letterCounter - 1
-                    #                    #print wordInListMemo
-                    #                    #print letterCounter
-                    #                    trial['stopCharacter'] = letterBlock[letterList[letterCounter]]
-                    #                    trial['samplesToLastIdenticalCharacter'] = wordInListNumberOfDifferentCharactersBetween
+                    if response[-1][0] in ansKeys:
+                        trigger(ansTrigger)
+                        print(ansTrigger)
+                        trial["response"] = ansTrigger
 
                     if conid in ["W-press", "M-press"]:  # or 'singlePressTimeOut':
                         dotDelayFrames = 1  # Mark as last event
-
-            # Play beep when time is up and mark as last event
-            #            if beepTime and trialClock.getTime() > beepTime:
-
-            #                # Play differently on windows and mac/linux
-
-            #                if windows:
-            #                    thread.start_new_thread(windowsBeep,())
-            #                else:
-            #                    beep.play()
-            #                trial['toneOnset'] = int((trialClock.getTime())*msScale)/msScale
-            #                trial['toneAngle'] = int((dotAngle)*degScale)/degScale
-            #                beepTime = 0
-            #                dotDelayFrames = 1
 
             # The little time after last event, where the dot keeps rotating.
             if dotDelayFrames:
@@ -432,7 +406,7 @@ def runBlock(condition, training, letterMode):
         ]:  # condition in ['W-press','M-press','W-press1','M-press1']:
             waitTimeBeforeNextTrial = 0.75
             questionText.setText(
-                "Press (C) to continue \n\n (Z) if error in last trial"
+                "Press (C) to continue \n\n (X) if error in last trial"
             )  # !!!!!! Set text of question text !!!!!!!
             questionText.draw()
             win.flip()
