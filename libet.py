@@ -84,11 +84,11 @@ questions = {
 
 moveKeys = {"left": -20, "up": 1, "down": -1, "right": 20}
 
-errorKeys = ["f", "num_subtract"]
+errorKeys = ["f", "num_subtract", "x"]
 leftKeys = ["d"]
 rightKeys = ["k"]
 ansKeys = ["return"]
-timeOutKeys = ["y", "n", "num_add"]
+timeOutKeys = ["y", "n", "num_add", "c"]
 quitKeys = ["q", "esc", "escape"]
 
 # letters = ['b','c','d','f','g','h','j','k','n','p','r','s','t','v','w','x','z']
@@ -432,7 +432,7 @@ def runBlock(condition, training, letterMode):
         ]:  # condition in ['W-press','M-press','W-press1','M-press1']:
             waitTimeBeforeNextTrial = 0.75
             questionText.setText(
-                "Press (Y) to continue \n\n (F) if error in last trial"
+                "Press (C) to continue \n\n (Z) if error in last trial"
             )  # !!!!!! Set text of question text !!!!!!!
             questionText.draw()
             win.flip()
